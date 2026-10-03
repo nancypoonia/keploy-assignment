@@ -3,7 +3,7 @@ export const site = {
   description:
     "A beginner-friendly, tested walkthrough of Keploy's Go Mux + MySQL quickstart: record real API traffic, then replay it as tests with the database switched off.",
   // Public source repository for this site.
-  repoUrl: "https://github.com/nancypoonia/keploy-go-mux-mysql-tutorial",
+  repoUrl: "https://github.com/nancypoonia/keploy-assignment",
   author: "Nancy Poonia",
 };
 
