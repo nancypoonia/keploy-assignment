@@ -14,7 +14,7 @@ export function FileTree({ items }: { items: Item[] }) {
             className="!mt-0 flex max-w-none items-baseline gap-2 whitespace-nowrap"
             style={{ paddingLeft: `${item.depth * 1.25}rem` }}
           >
-            <span aria-hidden="true" className={isDir ? "text-accent" : "text-muted"}>
+            <span aria-hidden="true" className={isDir ? "text-rec" : "text-muted"}>
               {isDir ? "▸" : "·"}
             </span>
             <span className={isDir ? "font-medium text-ink" : "text-ink"}>{item.name}</span>

@@ -3,74 +3,93 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ------------------------------------------------------------------
-   Design tokens
-   "Record orange" is the one loud colour on the page. It marks the
-   things Keploy does (recording, the proxy, the active TOC entry).
-   Pass/fail greens and reds come straight from the CLI's own summary.
+   Design tokens: a record/replay deck.
+   Red means "recording", green means "replaying / passed". Everything
+   else stays neutral so those two signals carry the page.
 ------------------------------------------------------------------- */
 :root {
-  --canvas: #f7f8fa;
+  --paper: #f3f5f8;
   --surface: #ffffff;
-  --ink: #1a1f2b;
-  --muted: #596173;
-  --line: #e2e5eb;
-  --accent: #e4570e;
-  --accent-ink: #b8430a;
-  --accent-soft: #fdeee5;
-  --pass: #2b8a3e;
-  --pass-soft: #e9f6ec;
-  --fail: #c92a2a;
-  --fail-soft: #fdecec;
-  --info: #1c64b4;
-  --info-soft: #e8f1fb;
-  --code-bg: #f3f4f7;
-  --header-h: 3.5rem;
+  --ink: #12151c;
+  --muted: #5a6272;
+  --line: #dce1e9;
+  --rec: #d7263d;
+  --rec-ink: #b81d32;
+  --rec-soft: #fce9ec;
+  --play: #0a8f63;
+  --play-ink: #077350;
+  --play-soft: #e2f4ec;
+  --warn: #a35f00;
+  --warn-soft: #fbf0dc;
+  --info: #2457c5;
+  --info-soft: #e8eefb;
+  --console: #0e1726;
+  --console-2: #121d30;
+  --console-3: #18253b;
+  --console-text: #d6deea;
+  --console-muted: #8797b0;
+  --header-h: 3.75rem;
   color-scheme: light;
 }
 
 .dark {
-  --canvas: #10141b;
-  --surface: #161b24;
-  --ink: #e4e8ef;
-  --muted: #9aa3b5;
-  --line: #262d3a;
-  --accent: #ff7a33;
-  --accent-ink: #ff9a5c;
-  --accent-soft: #2a1d15;
-  --pass: #51cf66;
-  --pass-soft: #14251a;
-  --fail: #ff6b6b;
-  --fail-soft: #2b1718;
-  --info: #74b0f0;
-  --info-soft: #142233;
-  --code-bg: #1a2029;
+  --paper: #0a0e15;
+  --surface: #111824;
+  --ink: #e6ebf2;
+  --muted: #98a3b5;
+  --line: #222c3b;
+  --rec: #ff5468;
+  --rec-ink: #ff7a8a;
+  --rec-soft: #2a1419;
+  --play: #2fd39a;
+  --play-ink: #4fe0ad;
+  --play-soft: #0f251d;
+  --warn: #f0a83a;
+  --warn-soft: #2a1f0d;
+  --info: #7ea6ff;
+  --info-soft: #131d33;
+  --console: #070b12;
+  --console-2: #0d1420;
+  --console-3: #131c2b;
   color-scheme: dark;
 }
 
 @theme inline {
-  --color-canvas: var(--canvas);
+  --color-paper: var(--paper);
   --color-surface: var(--surface);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
-  --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
-  --color-accent-soft: var(--accent-soft);
-  --color-pass: var(--pass);
-  --color-pass-soft: var(--pass-soft);
-  --color-fail: var(--fail);
-  --color-fail-soft: var(--fail-soft);
+  --color-rec: var(--rec);
+  --color-rec-ink: var(--rec-ink);
+  --color-rec-soft: var(--rec-soft);
+  --color-play: var(--play);
+  --color-play-ink: var(--play-ink);
+  --color-play-soft: var(--play-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
-  --color-code: var(--code-bg);
-  --font-sans: "IBM Plex Sans Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-console: var(--console);
+  --color-console-2: var(--console-2);
+  --color-console-3: var(--console-3);
+  --color-console-text: var(--console-text);
+  --color-console-muted: var(--console-muted);
+  --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html {
-  /* header + collapsible "On this page" bar on small screens */
+  /* header + collapsible step bar on small screens */
   scroll-padding-top: calc(var(--header-h) + 3.75rem);
   -webkit-text-size-adjust: 100%;
+}
+
+@media (min-width: 1024px) {
+  html {
+    scroll-padding-top: calc(var(--header-h) + 1.5rem);
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -80,393 +99,543 @@ html {
 }
 
 body {
-  background: var(--canvas);
+  background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
-  font-feature-settings: "kern", "liga";
   text-rendering: optimizeLegibility;
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--rec);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 ::selection {
-  background: var(--accent-soft);
+  background: var(--rec-soft);
   color: var(--ink);
 }
 
-@media (min-width: 1024px) {
-  html {
-    scroll-padding-top: calc(var(--header-h) + 1.25rem);
+.font-display {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 118;
+}
+
+/* blinking caret in the hero console */
+@media (prefers-reduced-motion: no-preference) {
+  .caret {
+    animation: caret 1s steps(1) infinite;
   }
+  @keyframes caret {
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+.transport {
+  background: var(--console-3);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  transition: background-color 150ms, border-color 150ms;
+}
+
+.transport:hover {
+  background: #1f2e48;
+  border-color: rgb(255 255 255 / 0.18);
 }
 
 /* Article styles live in the components layer so Tailwind utilities on
    individual components can still override them. */
 @layer components {
-/* ------------------------------------------------------------------
-   Article typography (scale ~1.25, 17px body)
-------------------------------------------------------------------- */
-.doc {
-  font-size: 1.0625rem;
-  line-height: 1.7;
-  color: var(--ink);
-}
-
-.doc > * + * {
-  margin-top: 1.1em;
-}
-
-.doc h2 {
-  font-size: 1.6rem;
-  line-height: 1.25;
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  margin-top: 3.25rem;
-  padding-top: 2.25rem;
-  border-top: 1px solid var(--line);
-}
-
-.doc h3 {
-  font-size: 1.22rem;
-  line-height: 1.35;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  margin-top: 2.25rem;
-}
-
-.doc h2 + *,
-.doc h3 + * {
-  margin-top: 0.75em;
-}
-
-.doc .heading-anchor {
-  color: inherit;
-  text-decoration: none;
-}
-
-.doc .heading-anchor::after {
-  content: "#";
-  margin-left: 0.4em;
-  color: var(--muted);
-  opacity: 0;
-  font-weight: 400;
-}
-
-.doc .heading-anchor:hover::after,
-.doc .heading-anchor:focus-visible::after {
-  opacity: 1;
-}
-
-.doc p,
-.doc li {
-  max-width: 70ch;
-}
-
-.doc a:not(.heading-anchor) {
-  color: var(--accent-ink);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-}
-
-.doc a:not(.heading-anchor):hover {
-  text-decoration-thickness: 2px;
-}
-
-.doc strong {
-  font-weight: 600;
-}
-
-.doc ul,
-.doc ol {
-  padding-left: 1.35em;
-}
-
-.doc ul {
-  list-style: disc;
-}
-
-.doc ol {
-  list-style: decimal;
-}
-
-.doc li + li {
-  margin-top: 0.35em;
-}
-
-.doc li::marker {
-  color: var(--muted);
-}
-
-.doc hr {
-  border: 0;
-  border-top: 1px solid var(--line);
-  margin: 2.5rem 0;
-}
-
-/* Inline code */
-.doc :not(pre) > code {
-  font-family: var(--font-mono);
-  font-size: 0.86em;
-  background: var(--code-bg);
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  padding: 0.1em 0.35em;
-  overflow-wrap: anywhere;
-}
-
-/* Tables */
-.doc .table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-}
-
-.doc table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.94rem;
-  line-height: 1.5;
-}
-
-.doc th,
-.doc td {
-  text-align: left;
-  padding: 0.6rem 0.9rem;
-  border-bottom: 1px solid var(--line);
-  vertical-align: top;
-}
-
-.doc th {
-  font-weight: 600;
-  background: var(--code-bg);
-}
-
-.doc td:first-child code {
-  white-space: nowrap;
-  overflow-wrap: normal;
-}
-
-.doc tr:last-child td {
-  border-bottom: 0;
-}
-
-/* ------------------------------------------------------------------
-   Code blocks (rehype-pretty-code output)
-------------------------------------------------------------------- */
-.doc figure[data-rehype-pretty-code-figure] {
-  margin-top: 1.1em;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--code-bg);
-  overflow: hidden;
-}
-
-.doc figcaption[data-rehype-pretty-code-title] {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--muted);
-  padding: 0.5rem 0.95rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
-}
-
-.doc pre {
-  font-family: var(--font-mono);
-  font-size: 0.84rem;
-  line-height: 1.65;
-  overflow-x: auto;
-  padding: 0.95rem 0;
-  margin: 0;
-  tab-size: 4;
-}
-
-.doc pre > code {
-  display: grid;
-  min-width: max-content;
-}
-
-.doc pre [data-line] {
-  padding: 0 3.25rem 0 0.95rem;
-}
-
-.doc pre [data-highlighted-line] {
-  background: var(--accent-soft);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-
-/* Dual-theme syntax colours from Shiki */
-.doc code[data-theme] span {
-  color: var(--shiki-light);
-}
-
-.dark .doc code[data-theme] span {
-  color: var(--shiki-dark);
-}
-
-/* Output blocks: real terminal output from the verified run */
-.doc .output figure[data-rehype-pretty-code-figure] {
-  margin-top: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-.doc .output pre {
-  font-size: 0.8rem;
-}
-
-/* ------------------------------------------------------------------
-   Steps: a real sequence, so it gets numbers
-------------------------------------------------------------------- */
-.doc .steps {
-  counter-reset: step;
-  list-style: none;
-  padding-left: 0;
-  margin-top: 1.5rem;
-}
-
-.doc .step {
-  counter-increment: step;
-  position: relative;
-  max-width: none;
-  padding-left: 2.6rem;
-  padding-bottom: 1.75rem;
-}
-
-.doc .step + .step {
-  margin-top: 0;
-}
-
-/* connecting line */
-.doc .step::after {
-  content: "";
-  position: absolute;
-  left: 0.8rem;
-  top: 2rem;
-  bottom: 0.35rem;
-  width: 1px;
-  background: var(--line);
-}
-
-.doc .step:last-child {
-  padding-bottom: 0;
-}
-
-.doc .step:last-child::after {
-  display: none;
-}
-
-.doc .step::before {
-  content: counter(step);
-  position: absolute;
-  left: 0;
-  top: 0.1rem;
-  width: 1.65rem;
-  height: 1.65rem;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.doc .step-title {
-  font-weight: 600;
-  line-height: 1.5;
-  margin-top: 0.1rem;
-}
-
-.doc .step-body {
-  margin-top: 0.5rem;
-}
-
-.doc .step-body > * + * {
-  margin-top: 1em;
-}
-
-.doc .callout p,
-.doc .callout li {
-  max-width: none;
-}
-
-.doc .callout figure[data-rehype-pretty-code-figure] {
-  background: var(--surface);
-}
-
-/* Diagram caption: one small, deliberate transition when the mode changes */
-@media (prefers-reduced-motion: no-preference) {
-  .diagram-caption {
-    animation: caption-in 260ms ease-out;
+  /* ---------------- article typography ---------------- */
+  .doc {
+    font-size: 1.075rem;
+    line-height: 1.72;
+    color: var(--ink);
   }
-  @keyframes caption-in {
-    from {
-      opacity: 0;
-      transform: translateY(3px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
+
+  .doc > * + * {
+    margin-top: 1.15em;
   }
-}
 
-.doc .output[data-wrap="true"] pre > code {
-  min-width: 0;
-}
-
-.doc .output[data-wrap="true"] pre [data-line] {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  padding-left: calc(0.95rem + 2ch);
-  text-indent: -2ch;
-}
-
-.doc kbd {
-  font-family: var(--font-mono);
-  font-size: 0.8em;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-bottom-width: 2px;
-  border-radius: 4px;
-  padding: 0.05em 0.4em;
-}
-
-/* Copy button sits in the block's title bar (figure caption or Output header) */
-.doc figure[data-rehype-pretty-code-figure],
-.doc .output {
-  position: relative;
-}
-
-.doc .output figure[data-rehype-pretty-code-figure] {
-  position: static;
-}
-
-@media (max-width: 639px) {
-  .doc .step {
-    padding-left: 2.1rem;
+  .doc h2 {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 112;
+    font-size: 1.85rem;
+    line-height: 1.15;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    margin-top: 4.5rem;
   }
-  .doc .step::before {
-    width: 1.45rem;
-    height: 1.45rem;
-    font-size: 0.74rem;
+
+  .doc h2 .step-tag {
+    display: block;
+    width: fit-content;
+    margin-bottom: 0.55rem;
+    font-family: var(--font-mono);
+    font-variation-settings: normal;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--rec-ink);
+    background: var(--rec-soft);
+    border-radius: 6px;
+    padding: 0.18rem 0.5rem;
   }
-  .doc .step::after {
-    left: 0.7rem;
+
+  .doc h3 {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 106;
+    font-size: 1.22rem;
+    line-height: 1.35;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-top: 2.5rem;
   }
+
+  .doc h2 + *,
+  .doc h3 + * {
+    margin-top: 0.8em;
+  }
+
+  .doc .heading-anchor {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .doc .heading-anchor::after {
+    content: "#";
+    margin-left: 0.4em;
+    color: var(--muted);
+    opacity: 0;
+    font-weight: 400;
+  }
+
+  .doc .heading-anchor:hover::after,
+  .doc .heading-anchor:focus-visible::after {
+    opacity: 1;
+  }
+
+  .doc p,
+  .doc li {
+    max-width: 68ch;
+  }
+
+  .doc a:not(.heading-anchor) {
+    color: var(--info);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .doc a:not(.heading-anchor):hover {
+    text-decoration-thickness: 2px;
+  }
+
+  .doc strong {
+    font-weight: 700;
+  }
+
+  .doc ul,
+  .doc ol {
+    padding-left: 1.35em;
+  }
+
+  .doc ul {
+    list-style: disc;
+  }
+
+  .doc ol {
+    list-style: decimal;
+  }
+
+  .doc li + li {
+    margin-top: 0.4em;
+  }
+
+  .doc li::marker {
+    color: var(--rec);
+  }
+
+  .doc :not(pre) > code {
+    font-family: var(--font-mono);
+    font-size: 0.84em;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.08em 0.38em;
+    overflow-wrap: anywhere;
+  }
+
+  .doc kbd {
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 0.05em 0.42em;
+  }
+
+  /* ---------------- tables ---------------- */
+  .doc .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+
+  .doc table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .doc th,
+  .doc td {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  .doc th {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .doc td:first-child code {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
+  .doc tr:last-child td {
+    border-bottom: 0;
+  }
+
+  /* ---------------- code blocks: always a dark console ---------------- */
+  .doc figure[data-rehype-pretty-code-figure] {
+    position: relative;
+    margin-top: 1.15em;
+    border-radius: 12px;
+    background: var(--console);
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset;
+  }
+
+  .doc figcaption[data-rehype-pretty-code-title] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    color: var(--console-muted);
+    padding: 0.55rem 5rem 0.55rem 1rem;
+    background: var(--console-2);
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
+  }
+
+  .doc figcaption[data-rehype-pretty-code-title]::before {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    flex-shrink: 0;
+    border-radius: 99px;
+    background: var(--console-muted);
+    opacity: 0.6;
+  }
+
+  .doc pre {
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    padding: 0.95rem 0;
+    margin: 0;
+    color: var(--console-text);
+    tab-size: 4;
+  }
+
+  .doc pre > code {
+    display: grid;
+    min-width: max-content;
+  }
+
   .doc pre [data-line] {
-    padding-right: 0.95rem;
+    padding: 0 1.25rem 0 1rem;
+  }
+
+  .doc pre [data-highlighted-line] {
+    background: rgb(215 38 61 / 0.16);
+    box-shadow: inset 3px 0 0 var(--rec);
+  }
+
+  .doc code[data-theme] span {
+    color: var(--shiki-dark);
+  }
+
+  .copy-btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 0.38rem;
+    z-index: 2;
+    font-family: var(--font-sans);
+    font-size: 0.74rem;
+    color: var(--console-text);
+    background: rgb(255 255 255 / 0.06);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: 6px;
+    padding: 0.1rem 0.55rem;
+    transition: background-color 150ms;
+  }
+
+  .copy-btn:hover {
+    background: rgb(255 255 255 / 0.14);
+  }
+
+  /* ---------------- output blocks (real terminal output) ---------------- */
+  .doc .output {
+    position: relative;
+    margin-top: 0.6em;
+    border-radius: 12px;
+    background: var(--console);
+    overflow: hidden;
+    border: 1px solid transparent;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.04) inset;
+  }
+
+  .doc .output-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-size: 0.76rem;
+    color: var(--console-muted);
+    padding: 0.5rem 5rem 0.5rem 1rem;
+    border-bottom: 1px dashed rgb(255 255 255 / 0.1);
+  }
+
+  .doc .output-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 99px;
+    background: var(--play);
+  }
+
+  .doc .badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 99px;
+    padding: 0.05rem 0.5rem;
+  }
+
+  .doc .badge-pass {
+    color: #062b1e;
+    background: #36d79f;
+  }
+
+  .doc .badge-fail {
+    color: #33060d;
+    background: #ff7b8b;
+  }
+
+  .doc .output figure[data-rehype-pretty-code-figure] {
+    position: static;
+    margin-top: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .doc .output pre {
+    font-size: 0.8rem;
+  }
+
+  .doc .output[data-wrap="true"] pre > code {
+    min-width: 0;
+  }
+
+  .doc .output[data-wrap="true"] pre [data-line] {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    padding-left: calc(1rem + 2ch);
+    text-indent: -2ch;
+  }
+
+  .doc .output-body {
+    overflow: hidden;
+  }
+
+  .doc .output-body.is-collapsed {
+    mask-image: linear-gradient(to bottom, #000 62%, transparent);
+  }
+
+  .doc .output-toggle {
+    display: block;
+    width: 100%;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--console-text);
+    padding: 0.55rem 1rem;
+    border-top: 1px solid rgb(255 255 255 / 0.07);
+    background: var(--console-2);
+    text-align: left;
+  }
+
+  .doc .output-toggle:hover {
+    background: var(--console-3);
+  }
+
+  /* ---------------- callouts ---------------- */
+  .doc .callout {
+    border-radius: 12px;
+    padding: 1rem 1.15rem;
+    border-left: 4px solid var(--c);
+    background: var(--c-soft);
+  }
+
+  .doc .callout p,
+  .doc .callout li {
+    max-width: none;
+  }
+
+  .doc .callout figure[data-rehype-pretty-code-figure] {
+    margin-top: 0.9rem;
+  }
+
+  /* ---------------- steps ---------------- */
+  .doc .steps {
+    counter-reset: step;
+    list-style: none;
+    padding-left: 0;
+    margin-top: 1.6rem;
+  }
+
+  .doc .step {
+    counter-increment: step;
+    position: relative;
+    max-width: none;
+    padding-left: 3rem;
+    padding-bottom: 2rem;
+  }
+
+  .doc .step + .step {
+    margin-top: 0;
+  }
+
+  .doc .step::after {
+    content: "";
+    position: absolute;
+    left: 0.95rem;
+    top: 2.2rem;
+    bottom: 0.4rem;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--line);
+  }
+
+  .doc .step:last-child {
+    padding-bottom: 0;
+  }
+
+  .doc .step:last-child::after {
+    display: none;
+  }
+
+  .doc .step::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1.95rem;
+    height: 1.95rem;
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .doc .step-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    padding-top: 0.15rem;
+  }
+
+  .doc .step-body {
+    margin-top: 0.55rem;
+  }
+
+  .doc .step-body > * + * {
+    margin-top: 1em;
+  }
+
+  .doc .stepdone {
+    margin-top: 2.25rem;
+  }
+
+  @media (max-width: 639px) {
+    .doc h2 {
+      font-size: 1.55rem;
+      margin-top: 3.5rem;
+    }
+    .doc .step {
+      padding-left: 2.5rem;
+    }
+    .doc .step::before {
+      width: 1.7rem;
+      height: 1.7rem;
+      font-size: 0.7rem;
+    }
+    .doc .step::after {
+      left: 0.82rem;
+    }
+  }
+
+  /* diagram caption: one small transition when the mode changes */
+  @media (prefers-reduced-motion: no-preference) {
+    .diagram-caption {
+      animation: caption-in 260ms ease-out;
+    }
+    @keyframes caption-in {
+      from {
+        opacity: 0;
+        transform: translateY(3px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
   }
 }
+
+/* faint measurement grid behind the hero, like a scope screen */
+.hero-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 70% at 70% 40%, #000 30%, transparent 75%);
+}
+
+.doc > h2:first-child {
+  margin-top: 3rem;
+}
+
+/* in dark mode the console blocks need an edge to separate them from the page */
+.dark .doc figure[data-rehype-pretty-code-figure],
+.dark .doc .output {
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.dark .doc .output figure[data-rehype-pretty-code-figure] {
+  box-shadow: none;
 }

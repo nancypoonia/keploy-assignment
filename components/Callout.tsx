@@ -1,12 +1,13 @@
+import type React from "react";
 import type { ReactNode } from "react";
 
 type CalloutType = "info" | "tip" | "warning" | "note";
 
-const styles: Record<CalloutType, { box: string; icon: string; label: string }> = {
-  info: { box: "border-info/40 bg-info-soft", icon: "text-info", label: "Info" },
-  tip: { box: "border-pass/40 bg-pass-soft", icon: "text-pass", label: "Tip" },
-  warning: { box: "border-fail/40 bg-fail-soft", icon: "text-fail", label: "Warning" },
-  note: { box: "border-accent/40 bg-accent-soft", icon: "text-accent", label: "Note" },
+const styles: Record<CalloutType, { c: string; soft: string; label: string }> = {
+  info: { c: "var(--info)", soft: "var(--info-soft)", label: "Info" },
+  tip: { c: "var(--play)", soft: "var(--play-soft)", label: "Tip" },
+  warning: { c: "var(--rec)", soft: "var(--rec-soft)", label: "Warning" },
+  note: { c: "var(--warn)", soft: "var(--warn-soft)", label: "Note" },
 };
 
 function Icon({ type }: { type: CalloutType }) {
@@ -63,15 +64,16 @@ export function Callout({
   const s = styles[type];
   return (
     <aside
-      className={`callout not-prose rounded-xl border px-4 py-3.5 sm:px-5 ${s.box}`}
+      className="callout not-prose"
+      style={{ "--c": s.c, "--c-soft": s.soft } as React.CSSProperties}
       role="note"
       aria-label={title ?? s.label}
     >
       <div className="flex gap-3">
-        <span className={`mt-[0.2rem] shrink-0 ${s.icon}`}>
+        <span className="mt-[0.2rem] shrink-0" style={{ color: s.c }}>
           <Icon type={type} />
         </span>
-        <div className="min-w-0 flex-1 text-[0.97rem] leading-relaxed [&>*+*]:mt-3">
+        <div className="min-w-0 flex-1 text-[0.98rem] leading-relaxed [&>*+*]:mt-3">
           {title ? <p className="font-semibold text-ink">{title}</p> : null}
           {children}
         </div>

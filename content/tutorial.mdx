@@ -3,17 +3,7 @@ import { Steps, Step } from "@/components/Steps";
 import { Output } from "@/components/Output";
 import { FileTree } from "@/components/FileTree";
 import { RecordReplayDiagram } from "@/components/RecordReplayDiagram";
-import { RunFacts } from "@/components/RunFacts";
-
-# Record and replay API tests for a Go app with Keploy
-
-You have a Go API that talks to MySQL. You want tests for it, but writing request fixtures and database mocks by hand is slow, and they drift from what the app really does. In this tutorial you'll let **Keploy** watch the app handle a few real requests, turn that traffic into tests, and then replay those tests **with the database switched off**.
-
-Everything below comes from a run I actually did. The commands are the ones I typed, and the output blocks are copied from my terminal (trimmed where marked).
-
-<RunFacts className="xl:hidden" />
-
-<RecordReplayDiagram />
+import { StepDone } from "@/components/StepDone";
 
 ## What you'll build
 
@@ -95,6 +85,8 @@ Keploy 3.6.87
 </Step>
 </Steps>
 
+<StepDone id="step-1-install-keploy" />
+
 ## Step 2: Run the sample app
 
 Start the app on its own first. If something is wrong with Go or MySQL, you'll want to find out now, not in the middle of a recording.
@@ -170,6 +162,8 @@ Before recording, I dropped the `list` table (the app recreates it on startup), 
 
 </Step>
 </Steps>
+
+<StepDone id="step-2-run-the-sample-app" />
 
 ## Step 3: Record test cases
 
@@ -266,6 +260,8 @@ Press <kbd>Ctrl</kbd>+<kbd>C</kbd> in Terminal 1. Keploy shuts down the app and 
 
 </Step>
 </Steps>
+
+<StepDone id="step-3-record-test-cases" />
 
 ## Step 4: See what Keploy captured
 
@@ -384,6 +380,8 @@ For example, `mock-3` stores the exact query and the `OK` packet MySQL sent back
 Test cases and mocks are plain YAML, so you can review them in a pull request and edit them by hand. When `keploy test` first runs, it also creates `keploy/.gitignore`, which contains `/reports/`: test reports stay out of git, while the tests and mocks go in.
 </Callout>
 
+<StepDone id="step-4-see-what-keploy-captured" />
+
 ## Step 5: Replay the tests without MySQL
 
 This is the part I was most curious about. If Keploy really answers the database calls itself, the tests should pass with **no database running**. So stop MySQL first.
@@ -464,6 +462,8 @@ Each new run gets the next folder: `test-run-1`, `test-run-2`, and so on.
 </Step>
 </Steps>
 
+<StepDone id="step-5-replay-the-tests-without-mysql" />
+
 ## Step 6: Catch a regression
 
 A test suite only earns its keep when it fails for the right reason. So break something on purpose: change the response message from `"Converted"` to `"Shortened"`.
@@ -528,9 +528,13 @@ This run passed 4 of 4 again, with exit code `0`.
 </Step>
 </Steps>
 
+<StepDone id="step-6-catch-a-regression" />
+
 ## What just happened?
 
 Here's how the two modes fit together, based on what Keploy logged during my run:
+
+<RecordReplayDiagram />
 
 - **Recording.** Keploy started its own proxy (`Proxy started at port:16789`), took over DNS resolution for the app, and forwarded the app's port 8080 through itself (`Started ingress forwarding`). Requests from `curl` passed through Keploy on the way in, and the app's MySQL traffic passed through it on the way out. Each incoming request became a test case and each query became a mock, both stamped with request and response timestamps. Keploy uses those timestamps to tie mocks to the test that triggered them: its replay log mentions a "mock window" per test, and the first test run saved the result as `keploy/test-set-0/mappings.yaml`. In my run, that file maps `get-all-1` to `mock-6` (the `select * from list` query) and `get-links-by-id-1` to `mock-4`.
 - **Testing.** Keploy restarted the app, saw from the recorded mocks that port 3306 speaks MySQL (`recovered MySQL ports from recorded mocks`), and sent every recorded request again. When the app queried the database, Keploy matched the query against `mocks.yaml` and returned the recorded response. Then it compared the app's HTTP response with the recorded one, skipping the fields marked as noise.

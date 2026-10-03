@@ -25,7 +25,7 @@ export function Pre(props: ComponentPropsWithoutRef<"pre">) {
         type="button"
         onClick={copy}
         aria-label={copied ? "Copied" : "Copy code"}
-        className="copy-btn absolute right-2 top-[0.3rem] rounded-md border border-line bg-surface px-2 py-0.5 font-sans text-[0.72rem] text-muted transition-colors hover:text-ink"
+        className="copy-btn"
       >
         {copied ? "Copied" : "Copy"}
       </button>

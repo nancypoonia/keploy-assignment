@@ -36,33 +36,33 @@ const content: Record<
 function Arrow({ label }: { label: string }) {
   return (
     <div className="flex flex-col items-center justify-center gap-1.5 py-1 md:px-1 md:py-0">
-      <span className="rounded-full border border-accent/50 bg-accent-soft px-2 py-0.5 text-center text-[0.7rem] font-medium leading-tight text-accent-ink">
+      <span className="rounded-full border border-rec/50 bg-rec-soft px-2 py-0.5 text-center text-[0.7rem] font-medium leading-tight text-rec-ink">
         {label}
       </span>
       {/* horizontal on desktop, vertical on mobile */}
       <svg className="hidden md:block" width="56" height="12" viewBox="0 0 56 12" aria-hidden="true">
-        <path d="M0 6h50M44 1l6 5-6 5" fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M0 6h50M44 1l6 5-6 5" fill="none" stroke="var(--rec)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <svg className="md:hidden" width="12" height="28" viewBox="0 0 12 28" aria-hidden="true">
-        <path d="M6 0v22M1 16l5 6 5-6" fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M6 0v22M1 16l5 6 5-6" fill="none" stroke="var(--rec)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </div>
   );
 }
 
-function Box({ node }: { node: Node }) {
+function Box({ node, mode }: { node: Node; mode: Mode }) {
   return (
     <div
       className={[
         "rounded-lg border px-3 py-3 text-center transition-colors duration-300",
-        node.keploy ? "border-accent/60 bg-accent-soft" : "border-line bg-surface",
+        node.keploy ? (mode === "record" ? "border-rec/60 bg-rec-soft" : "border-play/60 bg-play-soft") : "border-line bg-paper",
       ].join(" ")}
     >
       <p className={`font-semibold ${node.off ? "text-ink" : "text-ink"}`}>{node.title}</p>
       <p className="mt-0.5 text-[0.8rem] leading-snug text-muted">
         {node.off ? (
           <>
-            <span className="line-through decoration-fail/70">MySQL</span> is stopped
+            <span className="line-through decoration-rec/70">MySQL</span> is stopped
           </>
         ) : (
           node.sub
@@ -78,10 +78,10 @@ export function RecordReplayDiagram() {
   const c = content[mode];
 
   return (
-    <figure className="not-prose mt-8 rounded-2xl border border-line bg-canvas p-4 sm:p-5">
+    <figure className="not-prose mt-6 rounded-2xl border border-line bg-surface p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <figcaption className="text-sm font-semibold text-ink">How Keploy fits around your app</figcaption>
-        <div role="tablist" aria-label="Keploy mode" className="inline-flex rounded-lg border border-line bg-surface p-0.5">
+        <div role="tablist" aria-label="Keploy mode" className="inline-flex rounded-lg border border-line bg-paper p-0.5">
           {(["record", "replay"] as Mode[]).map((m) => (
             <button
               key={m}
@@ -93,11 +93,11 @@ export function RecordReplayDiagram() {
               onClick={() => setMode(m)}
               className={[
                 "flex items-center gap-1.5 rounded-md px-3 py-1.5 font-mono text-[0.8rem] transition-colors",
-                mode === m ? "bg-accent text-white" : "text-muted hover:text-ink",
+                mode === m ? (m === "record" ? "bg-rec text-white" : "bg-play text-white") : "text-muted hover:text-ink",
               ].join(" ")}
             >
               {m === "record" ? (
-                <span className={`inline-block h-2 w-2 rounded-full ${mode === m ? "bg-white" : "bg-accent"}`} aria-hidden="true" />
+                <span className={`inline-block h-2 w-2 rounded-full ${mode === m ? "bg-white" : "bg-rec"}`} aria-hidden="true" />
               ) : (
                 <svg width="9" height="10" viewBox="0 0 9 10" aria-hidden="true">
                   <path d="M0 0l9 5-9 5z" fill="currentColor" />
@@ -111,11 +111,11 @@ export function RecordReplayDiagram() {
 
       <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${mode}`} className="mt-5">
         <div className="grid grid-cols-1 items-center md:grid-cols-[minmax(0,1fr)_6.75rem_minmax(0,1fr)_6.75rem_minmax(0,1fr)]">
-          <Box node={c.nodes[0]} />
+          <Box node={c.nodes[0]} mode={mode} />
           <Arrow label={c.links[0].label} />
-          <Box node={c.nodes[1]} />
+          <Box node={c.nodes[1]} mode={mode} />
           <Arrow label={c.links[1].label} />
-          <Box node={c.nodes[2]} />
+          <Box node={c.nodes[2]} mode={mode} />
         </div>
         <p key={mode} className="diagram-caption mt-4 text-[0.94rem] leading-relaxed text-muted" aria-live="polite">
           {c.caption}

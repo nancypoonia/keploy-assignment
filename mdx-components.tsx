@@ -3,26 +3,30 @@ import type { ComponentPropsWithoutRef } from "react";
 import { Pre } from "@/components/Pre";
 
 function Heading({ as: Tag, id, children, ...rest }: { as: "h2" | "h3" } & ComponentPropsWithoutRef<"h2">) {
+  // "Step 3: Record test cases" -> small "Step 03" tag above "Record test cases"
+  const m = typeof children === "string" ? /^Step (\d+): (.+)$/.exec(children) : null;
+  const content = m ? (
+    <>
+      <span className="step-tag">Step {m[1].padStart(2, "0")}</span>
+      {m[2]}
+    </>
+  ) : (
+    children
+  );
   return (
     <Tag id={id} {...rest}>
       {id ? (
         <a href={`#${id}`} className="heading-anchor">
-          {children}
+          {content}
         </a>
       ) : (
-        children
+        content
       )}
     </Tag>
   );
 }
 
 const components: MDXComponents = {
-  h1: (props) => (
-    <h1
-      className="text-[2.1rem] font-semibold leading-[1.12] tracking-[-0.025em] text-ink sm:text-[2.75rem]"
-      {...props}
-    />
-  ),
   h2: (props) => <Heading as="h2" {...props} />,
   h3: (props) => <Heading as="h3" {...props} />,
   pre: (props) => <Pre {...props} />,

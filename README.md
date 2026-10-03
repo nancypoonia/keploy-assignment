@@ -36,22 +36,30 @@ Where my environment forced a deviation from the official quickstart (no Docker 
 - [rehype-pretty-code](https://rehype-pretty.pages.dev/) + [Shiki](https://shiki.style/) for build-time syntax highlighting, with separate light and dark themes
 - [next-themes](https://github.com/pacocoursey/next-themes) for the light/dark toggle
 - `remark-gfm` (tables) and `rehype-slug` (heading anchors)
-- IBM Plex Sans and IBM Plex Mono, self-hosted with Fontsource
+- Archivo (expanded, for headings), Atkinson Hyperlegible Next (body text, chosen for readability) and JetBrains Mono, self-hosted with Fontsource
+
+## Design and UX
+
+The page is designed as a record/replay deck: **red means recording, green means replaying or passed**, and everything else stays neutral.
+
+- **Hero console** (`components/HeroConsole.tsx`): an animated, condensed replay of the real run, with Record / Replay transport buttons and status lamps for MySQL, recorded test cases and passed tests. With `prefers-reduced-motion`, it shows the finished run without animating.
+- **Progress track** (`components/TrackNav.tsx`): a sticky sidebar whose red line fills as you read. Numbered steps turn green when you mark them done. On mobile it collapses into a bar under the header showing the current step and progress.
+- **"Mark step done"** (`components/StepDone.tsx`): saved in `localStorage` (with graceful fallback when storage is unavailable), with a link to the next step.
+- **Reading progress bar** under the header (`components/ReadingProgress.tsx`).
+- **Folded output** (`components/Output.tsx`): real terminal output is labelled, tagged passed/failed/error, and long logs collapse behind "Show full output".
+- Code blocks are dark consoles in both themes, with title bars, line highlighting and a copy button (`components/Pre.tsx`).
+- Light/dark theme toggle, keyboard focus styles, skip link, and no horizontal scrolling down to 375px wide.
 
 ## MDX components
 
-Custom components used inside the tutorial:
-
 | Component | Purpose |
 | --- | --- |
-| `<RecordReplayDiagram />` | Interactive diagram that toggles between `keploy record` and `keploy test` to show where Keploy sits |
-| `<Steps>` / `<Step>` | Numbered, connected step lists |
+| `<Steps>` / `<Step>` | Numbered, connected sub-steps |
 | `<Callout type="info \| tip \| warning \| note">` | Info, tip, warning and "what I actually ran" boxes |
-| `<Output label result>` | Marks real terminal output (with a passed/failed/error badge) so it can't be confused with commands |
+| `<Output label result wrap>` | Real terminal output, clearly separated from commands |
+| `<StepDone id>` | Progress checkbox at the end of each step |
 | `<FileTree />` | The files `keploy record` creates |
-| `<RunFacts />` | The exact environment the tutorial was verified in |
-
-Code blocks get a title bar, line highlighting and a copy button (`components/Pre.tsx`). The page also has a sticky table of contents with scroll-spy, a collapsible table of contents on mobile, and heading anchor links.
+| `<RecordReplayDiagram />` | Toggle between `keploy record` and `keploy test` to see where Keploy sits |
 
 ## Run it locally
 
@@ -80,13 +88,14 @@ npm run lint
 ```text
 app/
   layout.tsx          # fonts, theme provider, metadata
-  page.tsx            # header, sidebar TOC, article, run-facts rail, footer
+  page.tsx            # header, hero console, progress track, article, footer
   globals.css         # design tokens (light/dark), article and code styles
 components/           # MDX and UI components listed above
 content/
   tutorial.mdx        # the tutorial itself
 lib/
-  site.ts             # site metadata, tested-environment facts, TOC entries
+  site.ts             # site metadata, tested-environment facts, sections
+  progress.ts         # "mark step done" state (localStorage with fallback)
 mdx-components.tsx    # maps MDX elements (pre, h2, table, a, ...) to components
 next.config.mjs       # MDX + remark/rehype plugins, static export
 ```
