@@ -1,80 +1,134 @@
-# Record & replay Go API tests with Keploy
+<div align="center">
 
-A single-page documentation site with a beginner-friendly tutorial for [Keploy](https://github.com/keploy/keploy). It walks through Keploy's **Go Mux + MySQL** quickstart: record real API traffic from a Go app, then replay it as tests with the database switched off.
+# 🔴 ▶️ Record & Replay Go API Tests with Keploy
 
-Written by Nancy Poonia for the Keploy DevRel candidate assignment. It is an independent tutorial, not official Keploy documentation.
+**A beginner-friendly, tested tutorial for Keploy's Go Mux + MySQL quickstart, built as a single-page docs site with Next.js and MDX.**
 
-## What the tutorial covers
+[![Live site](https://img.shields.io/badge/Live_site-nancy--keploy--assignment.vercel.app-0a8f63?style=for-the-badge&logo=vercel&logoColor=white)](https://nancy-keploy-assignment.vercel.app/)
 
-1. What Keploy is, and why a Go developer would use it
-2. Installing the open-source Keploy CLI
-3. Running the `samples-go/mux-mysql` URL shortener against MySQL
-4. Recording 4 test cases and 7 MySQL mocks with `keploy record`
-5. Reading the generated YAML (test cases, mocks, noise, reports)
-6. Replaying the tests with `keploy test` **while MySQL is stopped** (4/4 passed)
-7. Catching a deliberate regression (2 failed, with a diff and exit code 1)
-8. How record and replay work, based on Keploy's own logs
-9. Troubleshooting problems I actually hit
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white)
+![MDX](https://img.shields.io/badge/MDX-content-1B1F24?style=flat-square&logo=mdx&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Keploy](https://img.shields.io/badge/Keploy-3.6.87_%28open_source%29-d7263d?style=flat-square)
+![Go](https://img.shields.io/badge/Go-1.24.7-00ADD8?style=flat-square&logo=go&logoColor=white)
+![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
 
-Every command and output on the page comes from a real run on 3 October 2026:
+[**Read the tutorial**](https://nancy-keploy-assignment.vercel.app/) · [Keploy](https://github.com/keploy/keploy) · [Sample app](https://github.com/keploy/samples-go/tree/main/mux-mysql)
 
-| | |
-| --- | --- |
-| Keploy | 3.6.87, open-source build (installed with `install.sh --oss`) |
-| Sample | [`keploy/samples-go`](https://github.com/keploy/samples-go) `mux-mysql` @ `2b0a034` |
+</div>
+
+---
+
+## ✨ What is this?
+
+A documentation-style tutorial for developers who have **never used Keploy**. It walks through recording real API traffic from a Go app, turning it into tests and mocks, and replaying those tests **with the database switched off**.
+
+Written by **Nancy Poonia** for the Keploy DevRel assignment. It is an independent tutorial, not official Keploy documentation.
+
+> [!NOTE]
+> **Every command and output on the page comes from a real run** (3 October 2026). Where my environment forced a deviation from the official quickstart, the tutorial says so right where it happens.
+
+---
+
+## 🎯 What the tutorial proves
+
+| | Result from the real run |
+| :-- | :-- |
+| 🔴 **Record** | `keploy record` captured **4 test cases** and **7 MySQL mocks** from real `curl` traffic |
+| ▶️ **Replay** | `keploy test` passed **4 / 4**, **with MySQL stopped** |
+| 🧪 **Regression** | A deliberate change (`"Converted"` → `"Shortened"`) failed **2 tests** with a clear diff and exit code `1` |
+| ✅ **Revert** | Back to **4 / 4** passing, exit code `0` |
+
+<details>
+<summary><b>📚 Tutorial outline</b></summary>
+
+1. What you'll build: the Mux + MySQL URL shortener and its 3 endpoints
+2. What is Keploy, and why a Go developer would care
+3. Prerequisites
+4. **Step 1:** Install Keploy (open-source build)
+5. **Step 2:** Run the sample app and sanity-check it
+6. **Step 3:** Record test cases with `keploy record`
+7. **Step 4:** Read the generated YAML: test cases, MySQL mocks, noise
+8. **Step 5:** Replay the tests without MySQL
+9. **Step 6:** Catch a regression
+10. What just happened? (based on Keploy's own logs)
+11. Troubleshooting: problems I actually hit
+12. Wrapping up and next steps
+
+</details>
+
+---
+
+## 🖥️ Tested setup
+
+| Tool | Version |
+| :-- | :-- |
+| Keploy | 3.6.87, open-source build (`install.sh --oss`) |
+| Sample | [`keploy/samples-go`](https://github.com/keploy/samples-go) → `mux-mysql` @ `2b0a034` |
 | Go | 1.24.7 |
 | MySQL | 8.0.46 |
 | OS | Ubuntu 24.04, Linux 6.18 |
 
-Where my environment forced a deviation from the official quickstart (no Docker Hub access, so MySQL ran natively; `keploy.io` blocked, so the installer came from its GitHub source), the tutorial says so on the page.
+---
 
-## Tech stack
+## 🎨 Design and UX
 
-- [Next.js 16](https://nextjs.org/) (App Router), exported as a fully static site (`output: "export"`)
-- [MDX](https://mdxjs.com/) through [`@next/mdx`](https://nextjs.org/docs/app/guides/mdx). The tutorial is `content/tutorial.mdx` and mixes Markdown with React components.
-- [Tailwind CSS v4](https://tailwindcss.com/) for layout and design tokens
-- [rehype-pretty-code](https://rehype-pretty.pages.dev/) + [Shiki](https://shiki.style/) for build-time syntax highlighting, with separate light and dark themes
-- [next-themes](https://github.com/pacocoursey/next-themes) for the light/dark toggle
+The page is designed as a **record / replay deck**: 🔴 red means *recording*, 🟢 green means *replaying or passed*, and everything else stays neutral.
+
+| Feature | What it does |
+| :-- | :-- |
+| 🎛️ **Interactive hero console** | Animated, condensed replay of the real run, with **Record / Replay** buttons and status lights for MySQL, recorded tests and passed tests |
+| 📍 **Progress track** | Sticky sidebar whose line fills as you read; on mobile it becomes a bar under the header |
+| ☑️ **"Mark step done"** | Ticks off each step and remembers your progress after a reload |
+| 📏 **Reading progress bar** | Thin bar under the header |
+| 🧾 **Folded terminal output** | Real output is labelled *passed / failed / error*, and long logs collapse behind "Show full output" |
+| 📋 **Code blocks** | Syntax highlighting, titles, highlighted lines and a copy button |
+| 🔀 **Record ↔ Replay diagram** | Toggle to see where Keploy sits in each mode |
+| 🌗 **Light / dark theme** | Follows your system setting, with a manual toggle |
+| ♿ **Accessibility** | Skip link, visible keyboard focus, reduced-motion support, readable fonts, no sideways scrolling down to 375 px |
+
+---
+
+## 🧱 Tech stack
+
+- **[Next.js 16](https://nextjs.org/)** (App Router), exported as a fully **static** site (`output: "export"`)
+- **[MDX](https://mdxjs.com/)** via [`@next/mdx`](https://nextjs.org/docs/app/guides/mdx). The tutorial is [`content/tutorial.mdx`](content/tutorial.mdx), mixing Markdown with React components
+- **[Tailwind CSS v4](https://tailwindcss.com/)** for layout and design tokens
+- **[rehype-pretty-code](https://rehype-pretty.pages.dev/) + [Shiki](https://shiki.style/)** for build-time syntax highlighting
+- **[next-themes](https://github.com/pacocoursey/next-themes)** for the theme toggle
 - `remark-gfm` (tables) and `rehype-slug` (heading anchors)
-- Archivo (expanded, for headings), Atkinson Hyperlegible Next (body text, chosen for readability) and JetBrains Mono, self-hosted with Fontsource
+- Fonts: **Archivo** (headings), **Atkinson Hyperlegible Next** (body, chosen for readability) and **JetBrains Mono** (code), self-hosted with Fontsource
 
-## Design and UX
-
-The page is designed as a record/replay deck: **red means recording, green means replaying or passed**, and everything else stays neutral.
-
-- **Hero console** (`components/HeroConsole.tsx`): an animated, condensed replay of the real run, with Record / Replay transport buttons and status lamps for MySQL, recorded test cases and passed tests. With `prefers-reduced-motion`, it shows the finished run without animating.
-- **Progress track** (`components/TrackNav.tsx`): a sticky sidebar whose red line fills as you read. Numbered steps turn green when you mark them done. On mobile it collapses into a bar under the header showing the current step and progress.
-- **"Mark step done"** (`components/StepDone.tsx`): saved in `localStorage` (with graceful fallback when storage is unavailable), with a link to the next step.
-- **Reading progress bar** under the header (`components/ReadingProgress.tsx`).
-- **Folded output** (`components/Output.tsx`): real terminal output is labelled, tagged passed/failed/error, and long logs collapse behind "Show full output".
-- Code blocks are dark consoles in both themes, with title bars, line highlighting and a copy button (`components/Pre.tsx`).
-- Light/dark theme toggle, keyboard focus styles, skip link, and no horizontal scrolling down to 375px wide.
-
-## MDX components
+### 🧩 Custom MDX components
 
 | Component | Purpose |
-| --- | --- |
+| :-- | :-- |
 | `<Steps>` / `<Step>` | Numbered, connected sub-steps |
 | `<Callout type="info \| tip \| warning \| note">` | Info, tip, warning and "what I actually ran" boxes |
 | `<Output label result wrap>` | Real terminal output, clearly separated from commands |
 | `<StepDone id>` | Progress checkbox at the end of each step |
 | `<FileTree />` | The files `keploy record` creates |
-| `<RecordReplayDiagram />` | Toggle between `keploy record` and `keploy test` to see where Keploy sits |
+| `<RecordReplayDiagram />` | Record / replay mode diagram |
 
-## Run it locally
+---
 
-Requires Node.js 20.9 or newer.
+## 🚀 Run it locally
+
+> Requires **Node.js 20.9+**
 
 ```bash
+git clone https://github.com/nancypoonia/keploy-assignment.git
+cd keploy-assignment
 npm install
-npm run dev      # http://localhost:3000
+npm run dev        # → http://localhost:3000
 ```
 
-Production build (static files land in `out/`):
+Production build (static files are written to `out/`):
 
 ```bash
 npm run build
-npx serve out    # or any static file server
+npx serve out      # or any static file server
 ```
 
 Lint:
@@ -83,23 +137,49 @@ Lint:
 npm run lint
 ```
 
-## Project structure
+---
+
+## 📁 Project structure
 
 ```text
 app/
   layout.tsx          # fonts, theme provider, metadata
   page.tsx            # header, hero console, progress track, article, footer
-  globals.css         # design tokens (light/dark), article and code styles
-components/           # MDX and UI components listed above
+  globals.css         # design tokens (light/dark), article, code and callout styles
+components/           # HeroConsole, TrackNav, StepDone, Output, Callout, Steps, ...
 content/
-  tutorial.mdx        # the tutorial itself
+  tutorial.mdx        # ← the tutorial itself
 lib/
   site.ts             # site metadata, tested-environment facts, sections
   progress.ts         # "mark step done" state (localStorage with fallback)
-mdx-components.tsx    # maps MDX elements (pre, h2, table, a, ...) to components
+mdx-components.tsx    # maps MDX elements (pre, h2, table, a) to components
 next.config.mjs       # MDX + remark/rehype plugins, static export
 ```
 
-## Deployment
+---
 
-The site is deployed on [Vercel](https://vercel.com/). Because `next.config.mjs` sets `output: "export"`, Vercel builds it with `next build` and serves the generated static files.
+## 🔍 Honest notes
+
+> [!IMPORTANT]
+> These are disclosed inside the tutorial as well.
+
+- **Mux + MySQL, not a Postgres sample.** The open-source Keploy CLI supports **HTTP + MySQL**. PostgreSQL support is in the account-based build from keploy.io, which I couldn't reach from my environment.
+- **MySQL 8.0.46 ran natively** instead of the documented `docker run … mysql:latest`, because Docker Hub was blocked where I ran it. Same port and credentials.
+- **The installer came from GitHub** (`keploy/keploy/keploy.sh`, which is where `keploy.io/install.sh` redirects), run with `--oss`.
+- **Not tested:** the account-based Keploy build, WSL, macOS and Windows.
+
+---
+
+## ☁️ Deployment
+
+Deployed on **[Vercel](https://vercel.com/)**: **https://nancy-keploy-assignment.vercel.app/**
+
+Because `next.config.mjs` sets `output: "export"`, Vercel runs `next build` and serves the generated static files. Every push to `main` redeploys automatically.
+
+---
+
+<div align="center">
+
+Made with 🔴 and ▶️ by **Nancy Poonia**
+
+</div>
