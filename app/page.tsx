@@ -72,8 +72,15 @@ export default function Page() {
               <span className="h-1.5 w-1.5 rounded-full bg-play" aria-hidden="true" />
               Tested end to end on 3 October 2026
             </p>
-            <h1 className="font-display mt-5 text-[2.35rem] font-extrabold leading-[1.02] tracking-[-0.03em] text-chrome-ink sm:text-[3.4rem] lg:text-[3.9rem]">
-              Record real traffic. Replay it as tests.
+            <h1 className="hero-title mt-6 text-chrome-ink">
+              <span className="hero-line">
+                <span className="hero-mark hero-mark-rec" aria-hidden="true" />
+                Record real traffic.
+              </span>
+              <span className="hero-line">
+                <span className="hero-mark hero-mark-play" aria-hidden="true" />
+                Replay it as tests.
+              </span>
             </h1>
             <p className="mt-5 max-w-[36rem] text-[1.08rem] leading-relaxed text-chrome-body sm:text-[1.15rem]">
               A beginner&apos;s guide to Keploy&apos;s <strong className="text-chrome-ink">Go Mux + MySQL</strong> quickstart.
@@ -87,7 +94,7 @@ export default function Page() {
             <div className="mt-7 flex flex-wrap gap-3">
               <a
                 href="#what-youll-build"
-                className="inline-flex items-center gap-2 rounded-lg bg-rec px-4 py-2.5 text-sm font-bold text-white transition-[filter] hover:brightness-110"
+                className="inline-flex items-center gap-2 rounded-lg bg-[#c81e35] px-4 py-2.5 text-sm font-bold text-white transition-[filter] hover:brightness-110"
               >
                 <span className="h-2 w-2 rounded-full bg-white" aria-hidden="true" />
                 Start the tutorial

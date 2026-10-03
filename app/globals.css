@@ -144,7 +144,42 @@ body {
 
 .font-display {
   font-family: var(--font-display);
-  font-variation-settings: "wdth" 118;
+  font-variation-settings: "wdth" 100;
+}
+
+/* Hero headline: two sentences, two lines, each marked with the
+   record / replay symbol used throughout the page. */
+.hero-title {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 100;
+  font-weight: 650;
+  font-size: clamp(2.1rem, 1.35rem + 3.2vw, 3.35rem);
+  line-height: 1.1;
+  letter-spacing: -0.022em;
+}
+
+.hero-line {
+  display: flex;
+  align-items: center;
+  gap: 0.32em;
+}
+
+.hero-mark {
+  flex-shrink: 0;
+  width: 0.36em;
+  height: 0.36em;
+}
+
+.hero-mark-rec {
+  border-radius: 99px;
+  background: var(--rec);
+  box-shadow: 0 0 0.25em var(--rec);
+}
+
+.hero-mark-play {
+  background: var(--play);
+  clip-path: polygon(8% 0, 100% 50%, 8% 100%);
+  width: 0.34em;
 }
 
 /* blinking caret in the hero console */
@@ -186,10 +221,10 @@ body {
 
   .doc h2 {
     font-family: var(--font-display);
-    font-variation-settings: "wdth" 112;
-    font-size: 1.85rem;
-    line-height: 1.15;
-    font-weight: 750;
+    font-variation-settings: "wdth" 100;
+    font-size: 1.8rem;
+    line-height: 1.18;
+    font-weight: 650;
     letter-spacing: -0.02em;
     margin-top: 4.5rem;
   }
@@ -211,10 +246,10 @@ body {
 
   .doc h3 {
     font-family: var(--font-display);
-    font-variation-settings: "wdth" 106;
+    font-variation-settings: "wdth" 100;
     font-size: 1.22rem;
     line-height: 1.35;
-    font-weight: 700;
+    font-weight: 650;
     letter-spacing: -0.01em;
     margin-top: 2.5rem;
   }
