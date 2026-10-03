@@ -1,0 +1,472 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------
+   Design tokens
+   "Record orange" is the one loud colour on the page. It marks the
+   things Keploy does (recording, the proxy, the active TOC entry).
+   Pass/fail greens and reds come straight from the CLI's own summary.
+------------------------------------------------------------------- */
+:root {
+  --canvas: #f7f8fa;
+  --surface: #ffffff;
+  --ink: #1a1f2b;
+  --muted: #596173;
+  --line: #e2e5eb;
+  --accent: #e4570e;
+  --accent-ink: #b8430a;
+  --accent-soft: #fdeee5;
+  --pass: #2b8a3e;
+  --pass-soft: #e9f6ec;
+  --fail: #c92a2a;
+  --fail-soft: #fdecec;
+  --info: #1c64b4;
+  --info-soft: #e8f1fb;
+  --code-bg: #f3f4f7;
+  --header-h: 3.5rem;
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: #10141b;
+  --surface: #161b24;
+  --ink: #e4e8ef;
+  --muted: #9aa3b5;
+  --line: #262d3a;
+  --accent: #ff7a33;
+  --accent-ink: #ff9a5c;
+  --accent-soft: #2a1d15;
+  --pass: #51cf66;
+  --pass-soft: #14251a;
+  --fail: #ff6b6b;
+  --fail-soft: #2b1718;
+  --info: #74b0f0;
+  --info-soft: #142233;
+  --code-bg: #1a2029;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-pass: var(--pass);
+  --color-pass-soft: var(--pass-soft);
+  --color-fail: var(--fail);
+  --color-fail-soft: var(--fail-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-code: var(--code-bg);
+  --font-sans: "IBM Plex Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  /* header + collapsible "On this page" bar on small screens */
+  scroll-padding-top: calc(var(--header-h) + 3.75rem);
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "kern", "liga";
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+@media (min-width: 1024px) {
+  html {
+    scroll-padding-top: calc(var(--header-h) + 1.25rem);
+  }
+}
+
+/* Article styles live in the components layer so Tailwind utilities on
+   individual components can still override them. */
+@layer components {
+/* ------------------------------------------------------------------
+   Article typography (scale ~1.25, 17px body)
+------------------------------------------------------------------- */
+.doc {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.doc > * + * {
+  margin-top: 1.1em;
+}
+
+.doc h2 {
+  font-size: 1.6rem;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin-top: 3.25rem;
+  padding-top: 2.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.doc h3 {
+  font-size: 1.22rem;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 2.25rem;
+}
+
+.doc h2 + *,
+.doc h3 + * {
+  margin-top: 0.75em;
+}
+
+.doc .heading-anchor {
+  color: inherit;
+  text-decoration: none;
+}
+
+.doc .heading-anchor::after {
+  content: "#";
+  margin-left: 0.4em;
+  color: var(--muted);
+  opacity: 0;
+  font-weight: 400;
+}
+
+.doc .heading-anchor:hover::after,
+.doc .heading-anchor:focus-visible::after {
+  opacity: 1;
+}
+
+.doc p,
+.doc li {
+  max-width: 70ch;
+}
+
+.doc a:not(.heading-anchor) {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.doc a:not(.heading-anchor):hover {
+  text-decoration-thickness: 2px;
+}
+
+.doc strong {
+  font-weight: 600;
+}
+
+.doc ul,
+.doc ol {
+  padding-left: 1.35em;
+}
+
+.doc ul {
+  list-style: disc;
+}
+
+.doc ol {
+  list-style: decimal;
+}
+
+.doc li + li {
+  margin-top: 0.35em;
+}
+
+.doc li::marker {
+  color: var(--muted);
+}
+
+.doc hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 2.5rem 0;
+}
+
+/* Inline code */
+.doc :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0.1em 0.35em;
+  overflow-wrap: anywhere;
+}
+
+/* Tables */
+.doc .table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.doc table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.doc th,
+.doc td {
+  text-align: left;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.doc th {
+  font-weight: 600;
+  background: var(--code-bg);
+}
+
+.doc td:first-child code {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.doc tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ------------------------------------------------------------------
+   Code blocks (rehype-pretty-code output)
+------------------------------------------------------------------- */
+.doc figure[data-rehype-pretty-code-figure] {
+  margin-top: 1.1em;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--code-bg);
+  overflow: hidden;
+}
+
+.doc figcaption[data-rehype-pretty-code-title] {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  padding: 0.5rem 0.95rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.doc pre {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  line-height: 1.65;
+  overflow-x: auto;
+  padding: 0.95rem 0;
+  margin: 0;
+  tab-size: 4;
+}
+
+.doc pre > code {
+  display: grid;
+  min-width: max-content;
+}
+
+.doc pre [data-line] {
+  padding: 0 3.25rem 0 0.95rem;
+}
+
+.doc pre [data-highlighted-line] {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Dual-theme syntax colours from Shiki */
+.doc code[data-theme] span {
+  color: var(--shiki-light);
+}
+
+.dark .doc code[data-theme] span {
+  color: var(--shiki-dark);
+}
+
+/* Output blocks: real terminal output from the verified run */
+.doc .output figure[data-rehype-pretty-code-figure] {
+  margin-top: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.doc .output pre {
+  font-size: 0.8rem;
+}
+
+/* ------------------------------------------------------------------
+   Steps: a real sequence, so it gets numbers
+------------------------------------------------------------------- */
+.doc .steps {
+  counter-reset: step;
+  list-style: none;
+  padding-left: 0;
+  margin-top: 1.5rem;
+}
+
+.doc .step {
+  counter-increment: step;
+  position: relative;
+  max-width: none;
+  padding-left: 2.6rem;
+  padding-bottom: 1.75rem;
+}
+
+.doc .step + .step {
+  margin-top: 0;
+}
+
+/* connecting line */
+.doc .step::after {
+  content: "";
+  position: absolute;
+  left: 0.8rem;
+  top: 2rem;
+  bottom: 0.35rem;
+  width: 1px;
+  background: var(--line);
+}
+
+.doc .step:last-child {
+  padding-bottom: 0;
+}
+
+.doc .step:last-child::after {
+  display: none;
+}
+
+.doc .step::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.1rem;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doc .step-title {
+  font-weight: 600;
+  line-height: 1.5;
+  margin-top: 0.1rem;
+}
+
+.doc .step-body {
+  margin-top: 0.5rem;
+}
+
+.doc .step-body > * + * {
+  margin-top: 1em;
+}
+
+.doc .callout p,
+.doc .callout li {
+  max-width: none;
+}
+
+.doc .callout figure[data-rehype-pretty-code-figure] {
+  background: var(--surface);
+}
+
+/* Diagram caption: one small, deliberate transition when the mode changes */
+@media (prefers-reduced-motion: no-preference) {
+  .diagram-caption {
+    animation: caption-in 260ms ease-out;
+  }
+  @keyframes caption-in {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+.doc .output[data-wrap="true"] pre > code {
+  min-width: 0;
+}
+
+.doc .output[data-wrap="true"] pre [data-line] {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-left: calc(0.95rem + 2ch);
+  text-indent: -2ch;
+}
+
+.doc kbd {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0.05em 0.4em;
+}
+
+/* Copy button sits in the block's title bar (figure caption or Output header) */
+.doc figure[data-rehype-pretty-code-figure],
+.doc .output {
+  position: relative;
+}
+
+.doc .output figure[data-rehype-pretty-code-figure] {
+  position: static;
+}
+
+@media (max-width: 639px) {
+  .doc .step {
+    padding-left: 2.1rem;
+  }
+  .doc .step::before {
+    width: 1.45rem;
+    height: 1.45rem;
+    font-size: 0.74rem;
+  }
+  .doc .step::after {
+    left: 0.7rem;
+  }
+  .doc pre [data-line] {
+    padding-right: 0.95rem;
+  }
+}
+}

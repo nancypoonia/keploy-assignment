@@ -1,0 +1,622 @@
+import { Callout } from "@/components/Callout";
+import { Steps, Step } from "@/components/Steps";
+import { Output } from "@/components/Output";
+import { FileTree } from "@/components/FileTree";
+import { RecordReplayDiagram } from "@/components/RecordReplayDiagram";
+import { RunFacts } from "@/components/RunFacts";
+
+# Record and replay API tests for a Go app with Keploy
+
+You have a Go API that talks to MySQL. You want tests for it, but writing request fixtures and database mocks by hand is slow, and they drift from what the app really does. In this tutorial you'll let **Keploy** watch the app handle a few real requests, turn that traffic into tests, and then replay those tests **with the database switched off**.
+
+Everything below comes from a run I actually did. The commands are the ones I typed, and the output blocks are copied from my terminal (trimmed where marked).
+
+<RunFacts className="xl:hidden" />
+
+<RecordReplayDiagram />
+
+## What you'll build
+
+You'll use Keploy's **Mux + MySQL** sample, a tiny URL shortener written with [gorilla/mux](https://github.com/gorilla/mux). It has three endpoints:
+
+| Endpoint | What it does | Touches MySQL? |
+| --- | --- | --- |
+| `POST /create` | Stores a link and returns a short URL like `/links/1` | `INSERT` |
+| `GET /links/{id}` | Redirects (HTTP 307) to the stored link | `SELECT … WHERE id=` |
+| `GET /all` | Lists every stored link as JSON | `SELECT *` |
+
+By the end you will have:
+
+- 4 test cases and 7 MySQL mocks that Keploy generated from real traffic
+- a passing test run with MySQL stopped
+- a failing test run that catches a change you made on purpose
+
+Plan on about 15 minutes if Go and Docker are already installed.
+
+## What is Keploy?
+
+Keploy is an open-source testing tool that **records** the traffic going in and out of your application and saves it as YAML: the incoming API calls become test cases, and the outgoing calls (here, MySQL queries) become mocks. Later, in **test** mode, Keploy starts your app again, replays the recorded requests, answers the app's database calls from the mocks, and compares each response with what it recorded.
+
+It does this from outside your process. You don't add an SDK or change a line of Go. On Linux, Keploy uses eBPF to route the app's network traffic through its own proxy, so you just wrap your normal start command: `keploy record -c "./main"`.
+
+### Why a Go developer would care
+
+- **No hand-written fixtures.** You don't write `httptest` request tables or `sqlmock` expectations for these flows. They come from real requests.
+- **No database needed to run the tests.** Replay uses the recorded mocks. In Step 5 the tests pass while MySQL isn't running at all.
+- **Failures are easy to read.** A failed test prints the expected and actual response side by side, and `keploy test` exits with a non-zero code you can gate CI on.
+
+<Callout type="info" title="Two builds of the Keploy CLI">
+Keploy's install script can install either an **open-source build** (pass `--oss`) or, by default, an **account-based build** from keploy.io that asks you to run `keploy login`. When it installs the open-source build, the installer prints that this build supports **HTTP and MySQL**, and that PostgreSQL, MongoDB, gRPC, Kafka and native macOS/Windows recording need the account-based build. I ran everything here with the **open-source build, v3.6.87**. That's one reason this tutorial uses the MySQL sample.
+</Callout>
+
+## Prerequisites
+
+- **Linux** with kernel 5.10 or newer (Keploy's install docs list this requirement). I used Ubuntu 24.04. Keploy's docs say WSL works too, but I didn't test it.
+- **Go**. The sample's `go.mod` says `go 1.21.3`. I built it with Go 1.24.7.
+- **A MySQL server** on `localhost:3306`. The official quickstart uses Docker for this.
+- **sudo access**, because Keploy's eBPF hooks need root.
+- **git** and **curl**.
+
+## Step 1: Install Keploy
+
+<Steps>
+<Step title="Run the installer with --oss">
+
+Keploy's documented install command is `curl --silent -O -L https://keploy.io/install.sh && source install.sh`. That URL redirects to the script [`keploy.sh` in the keploy/keploy repository](https://github.com/keploy/keploy/blob/main/keploy.sh). To get the open-source build, add `--oss`:
+
+```bash title="Terminal"
+curl --silent -O -L https://keploy.io/install.sh && source install.sh --oss
+```
+
+<Callout type="note" title="What I actually ran">
+My sandbox's network policy blocked `keploy.io`, so I downloaded the same script from GitHub (the redirect target) and ran it with `--oss`. It downloaded `keploy_linux_amd64.tar.gz` from Keploy's GitHub releases and installed the binary at `/usr/local/bin/keploy`.
+
+```bash title="Terminal"
+curl -sSL -o install.sh https://raw.githubusercontent.com/keploy/keploy/main/keploy.sh
+source install.sh --oss
+```
+</Callout>
+
+</Step>
+<Step title="Check the version">
+
+```bash title="Terminal"
+keploy --version
+```
+
+<Output label="Output (banner trimmed)">
+
+```text
+Keploy 3.6.87
+```
+
+</Output>
+
+</Step>
+</Steps>
+
+## Step 2: Run the sample app
+
+Start the app on its own first. If something is wrong with Go or MySQL, you'll want to find out now, not in the middle of a recording.
+
+<Steps>
+<Step title="Clone the samples and download dependencies">
+
+```bash title="Terminal"
+git clone https://github.com/keploy/samples-go.git
+cd samples-go/mux-mysql
+go mod download
+```
+
+</Step>
+<Step title="Start MySQL">
+
+This is the command from the official quickstart. It starts MySQL in Docker with the root password the sample expects:
+
+```bash title="Terminal"
+docker run -p 3306:3306 --rm --name mysql \
+  -e MYSQL_ROOT_PASSWORD=my-secret-pw -d mysql:latest
+```
+
+<Callout type="note" title="What I actually ran">
+Docker Hub was blocked in my sandbox, so I couldn't pull `mysql:latest`. Instead I installed **MySQL 8.0.46** from Ubuntu's packages and gave `root` the same password, `my-secret-pw`, on port 3306. The app and Keploy only see a MySQL server at `localhost:3306`, so any MySQL works as long as the connection string below matches it.
+</Callout>
+
+</Step>
+<Step title="Point the app at MySQL and build it">
+
+The app reads its database DSN from an environment variable called `ConnectionString` (see `helpers/getConnectionString.go`). If the variable is empty, the app exits right away.
+
+```bash title="Terminal"
+export ConnectionString="root:my-secret-pw@tcp(localhost:3306)/mysql"
+go build -o main
+```
+
+</Step>
+<Step title="Sanity check: run it without Keploy">
+
+Start the server with `./main`. In a second terminal, create a short link and follow it:
+
+```bash title="Terminal 2"
+curl --request POST \
+  --url http://localhost:8080/create \
+  --header 'content-type: application/json' \
+  --data '{"link": "https://google.com"}'
+
+curl -i http://localhost:8080/links/1
+```
+
+<Output label="Output">
+
+```text
+{"message":"Converted","link":"http://localhost:8080/links/1","status":true}
+
+HTTP/1.1 307 Temporary Redirect
+Content-Type: text/html; charset=utf-8
+Location: https://google.com
+Date: Sat, 03 Oct 2026 09:32:16 GMT
+Content-Length: 54
+
+<a href="https://google.com">Temporary Redirect</a>.
+```
+
+</Output>
+
+It works. Stop the server with <kbd>Ctrl</kbd>+<kbd>C</kbd>. On startup the app creates a `list` table with an auto-increment `id`, so every link you create gets the next number.
+
+<Callout type="tip" title="Your IDs may differ from mine">
+Before recording, I dropped the `list` table (the app recreates it on startup), so my first recorded link was `/links/1`. If you skip that, your first link might be `/links/2`. That's fine: Keploy records whatever actually happens. Just use the IDs your own responses return.
+</Callout>
+
+</Step>
+</Steps>
+
+## Step 3: Record test cases
+
+Now run the same binary under Keploy. Keep MySQL running, because in record mode the app talks to the real database and Keploy writes down what it sees.
+
+<Steps>
+<Step title="Start Keploy in record mode">
+
+```bash title="Terminal 1"
+sudo -E PATH=$PATH keploy record -c "./main"
+```
+
+Here's what each part does:
+
+- `-c "./main"` is the command Keploy uses to start your app. Keploy launches the app itself, so don't start `./main` separately.
+- `sudo` is needed because Keploy loads eBPF programs into the kernel.
+- `-E` keeps your environment variables. **Without it, `sudo` drops `ConnectionString` and the app exits on startup** (see [Troubleshooting](#troubleshooting)).
+- `PATH=$PATH` hands your `PATH` to Keploy and to the app it starts. Even with `-E`, `sudo` on Ubuntu replaces `PATH` with its own `secure_path`, so anything your start command needs from your `PATH` would otherwise go missing. (It doesn't change where `sudo` looks for `keploy` itself. The installer put it in `/usr/local/bin`, which `sudo` already searches.)
+
+Wait until you see the app's own startup lines after Keploy's banner:
+
+<Output label="Output (excerpt)">
+
+```text
+🐰 Keploy(agent): 2026-10-03T09:32:27Z	INFO	Keploy has taken control of the DNS resolution mechanism, your application may misbehave if you have provided wrong domain name in your application code.
+🐰 Keploy(agent): 2026-10-03T09:32:27Z	INFO	Proxy started at port:16789
+🐰 Keploy: 2026-10-03T09:32:28.689026113Z 	INFO	Keploy agent is ready to record test cases and mocks.
+🐰 Keploy: 2026-10-03T09:32:28.689195934Z 	INFO	Starting Application :	{"executing_cmd": "/usr/bin/sh -c ./main"}
+2026/10/03 15:02:30 *** DB Initiated at ***
+2026/10/03 15:02:30 Server is running on port:8080
+🐰 Keploy(agent): 2026-10-03T09:32:30Z	INFO	Started ingress forwarding	{"orig_port": 8080, "new_port": 38187}
+```
+
+</Output>
+
+</Step>
+<Step title="Send some traffic">
+
+In a second terminal, call each endpoint. Every request becomes one test case.
+
+```bash title="Terminal 2"
+curl --request POST \
+  --url http://localhost:8080/create \
+  --header 'content-type: application/json' \
+  --data '{"link": "https://google.com"}'
+
+curl http://localhost:8080/links/1
+
+curl --request POST \
+  --url http://localhost:8080/create \
+  --header 'content-type: application/json' \
+  --data '{"link": "https://github.com"}'
+
+curl http://localhost:8080/all
+```
+
+<Output label="Output">
+
+```text
+{"message":"Converted","link":"http://localhost:8080/links/1","status":true}
+<a href="https://google.com">Temporary Redirect</a>.
+{"message":"Converted","link":"http://localhost:8080/links/2","status":true}
+{"message":[{"id":"1","website":"https://google.com"},{"id":"2","website":"https://github.com"}],"status":true}
+```
+
+</Output>
+
+Back in Terminal 1, Keploy confirms each capture as it happens:
+
+<Output label="Terminal 1 (excerpt)">
+
+```text
+🐰 Keploy: 2026-10-03T09:32:56.05827569Z 	INFO	🟠 Keploy has captured test cases for the user's application.	{"path": "/home/claude/run/samples-go/mux-mysql/keploy/test-set-0/tests", "testcase name": "post-create-1"}
+🐰 Keploy: 2026-10-03T09:32:56.064610963Z 	INFO	🟠 Keploy has captured test cases for the user's application.	{"path": "/home/claude/run/samples-go/mux-mysql/keploy/test-set-0/tests", "testcase name": "get-links-by-id-1"}
+🐰 Keploy: 2026-10-03T09:32:56.072097951Z 	INFO	🟠 Keploy has captured test cases for the user's application.	{"path": "/home/claude/run/samples-go/mux-mysql/keploy/test-set-0/tests", "testcase name": "post-create-2"}
+🐰 Keploy: 2026-10-03T09:32:56.078226996Z 	INFO	🟠 Keploy has captured test cases for the user's application.	{"path": "/home/claude/run/samples-go/mux-mysql/keploy/test-set-0/tests", "testcase name": "get-all-1"}
+```
+
+</Output>
+
+</Step>
+<Step title="Stop recording">
+
+Press <kbd>Ctrl</kbd>+<kbd>C</kbd> in Terminal 1. Keploy shuts down the app and saves everything:
+
+<Output label="Output (excerpt)">
+
+```text
+🐰 Keploy: 2026-10-03T09:33:06.146491338Z 	INFO	Stopping Keploy recording...
+🐰 Keploy: 2026-10-03T09:33:06.148234878Z 	INFO	Keploy agent stopped.
+```
+
+</Output>
+
+</Step>
+</Steps>
+
+## Step 4: See what Keploy captured
+
+Recording left two new things in the project folder:
+
+<FileTree
+  items={[
+    { name: "mux-mysql/", depth: 0 },
+    { name: "keploy.yml", depth: 1, note: "config Keploy generated from your flags" },
+    { name: "keploy/", depth: 1 },
+    { name: "test-set-0/", depth: 2, note: "one folder per recording session" },
+    { name: "mocks.yaml", depth: 3, note: "7 MySQL mocks" },
+    { name: "tests/", depth: 3 },
+    { name: "post-create-1.yaml", depth: 4 },
+    { name: "get-links-by-id-1.yaml", depth: 4 },
+    { name: "post-create-2.yaml", depth: 4 },
+    { name: "get-all-1.yaml", depth: 4 },
+  ]}
+/>
+
+### A test case
+
+Each test case is a recorded request and response. This is `post-create-1.yaml`, exactly as Keploy wrote it. The highlighting is mine: it marks the request body, the response Keploy will expect, and the `noise` section.
+
+```yaml title="keploy/test-set-0/tests/post-create-1.yaml" {18,25-27,33-35}
+# Generated by Keploy (3.6.87)
+version: api.keploy.io/v1beta1
+kind: Http
+name: post-create-1
+spec:
+  metadata: {}
+  req:
+    method: POST
+    proto_major: 1
+    proto_minor: 1
+    url: http://localhost:8080/create
+    header:
+      Accept: '*/*'
+      Content-Length: "30"
+      Content-Type: application/json
+      Host: localhost:8080
+      User-Agent: curl/8.5.0
+    body: '{"link": "https://google.com"}'
+    timestamp: 2026-10-03T09:32:56.053542509Z
+  resp:
+    status_code: 200
+    header:
+      Content-Length: "77"
+      Content-Type: text/plain; charset=utf-8
+      Date: Sat, 03 Oct 2026 09:32:56 GMT
+    body: |
+      {"message":"Converted","link":"http://localhost:8080/links/1","status":true}
+    status_message: OK
+    proto_major: 0
+    proto_minor: 0
+    timestamp: 2026-10-03T09:32:56.05611619Z
+  objects: []
+  assertions:
+    noise:
+      header.Date: []
+  created: 1791019976
+  app_port: 8080
+curl: |-
+  curl --request POST \
+    --url http://localhost:8080/create \
+    --header 'Accept: */*' \
+    --header 'Content-Type: application/json' \
+    --header 'Host: localhost:8080' \
+    --header 'User-Agent: curl/8.5.0' \
+    --data "{\"link\": \"https://google.com\"}"
+```
+
+Notice the `noise` section. Keploy marked the `Date` header as noise on its own, because it changes on every run. Without that, every replay would fail on the timestamp. The file also includes a ready-made `curl` command, which is handy for reproducing a single request.
+
+### The mocks
+
+`mocks.yaml` holds every exchange between the app and MySQL, decoded at the MySQL protocol level, not saved as raw bytes. Here's the full list from my run:
+
+| Mock | MySQL operation | What it is |
+| --- | --- | --- |
+| `mock-0` | `HandshakeV10` (type `config`) | The app logging in as `root` |
+| `mock-1` | `COM_PING` | `store.Ping()` on startup |
+| `mock-2` | `COM_QUERY` | `create table if not exists list(…)` |
+| `mock-3` | `COM_QUERY` → `OK` | `insert into list (website) values("https://google.com")` |
+| `mock-4` | `COM_QUERY` → `TextResultSet` | `select website from list where id=1` |
+| `mock-5` | `COM_QUERY` → `OK` | `insert into list (website) values("https://github.com")` |
+| `mock-6` | `COM_QUERY` → `TextResultSet` | `select * from list` |
+
+For example, `mock-3` stores the exact query and the `OK` packet MySQL sent back, including `last_insert_id: 1`. That's where the `/links/1` in the response comes from:
+
+```yaml title="keploy/test-set-0/mocks.yaml (mock-3, excerpt)"
+    requests:
+        - header:
+            header:
+                payload_length: 56
+                sequence_id: 0
+            packet_type: COM_QUERY
+          message:
+            command: 3
+            query: insert into list (website) values("https://google.com")
+    responses:
+        - header:
+            header:
+                payload_length: 7
+                sequence_id: 1
+            packet_type: OK
+          message:
+            header: 0
+            affected_rows: 1
+            last_insert_id: 1
+            status_flags: 2
+            warnings: 0
+```
+
+<Callout type="tip" title="These files are meant to be committed">
+Test cases and mocks are plain YAML, so you can review them in a pull request and edit them by hand. When `keploy test` first runs, it also creates `keploy/.gitignore`, which contains `/reports/`: test reports stay out of git, while the tests and mocks go in.
+</Callout>
+
+## Step 5: Replay the tests without MySQL
+
+This is the part I was most curious about. If Keploy really answers the database calls itself, the tests should pass with **no database running**. So stop MySQL first.
+
+<Steps>
+<Step title="Stop MySQL">
+
+If you started MySQL with the Docker command from Step 2, stop that container. My MySQL ran as a system service, so I stopped the service and then tried to connect, to make sure nothing was listening on port 3306:
+
+```bash title="Terminal (my setup, as root)"
+service mysql stop
+mysql -uroot -pmy-secret-pw -h127.0.0.1 -e "select 1"
+```
+
+<Output label="Output (excerpt)">
+
+```text
+ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:3306' (111)
+```
+
+</Output>
+
+</Step>
+<Step title="Run the tests">
+
+```bash title="Terminal"
+sudo -E PATH=$PATH keploy test -c "./main" --delay 10
+```
+
+`--delay 10` tells Keploy to wait 10 seconds after starting the app before sending the first request. According to `keploy test --help`, the default is 5 seconds. This app sleeps 2 seconds before it even connects to the database, so the extra time is a safe margin.
+
+<Output label="Output (excerpt)" result="pass">
+
+```text
+🐰 Keploy: 2026-10-03T09:33:36.048426259Z 	INFO	Test Sets to be Replayed	{"testSets": ["test-set-0"]}
+🐰 Keploy(agent): 2026-10-03T09:33:38Z	INFO	recovered MySQL ports from recorded mocks; replay will route them to the MySQL parser	{"ports": [3306]}
+🐰 Keploy: 2026-10-03T09:33:38.06272711Z 	INFO	Starting Application :	{"executing_cmd": "/usr/bin/sh -c ./main"}
+2026/10/03 15:03:40 *** DB Initiated at ***
+2026/10/03 15:03:40 Server is running on port:8080
+🐰 Keploy: 2026-10-03T09:33:48.077445224Z 	INFO	result	{"testcase id": "post-create-1", "testset id": "test-set-0", "passed": "true"}
+🐰 Keploy: 2026-10-03T09:33:48.079128943Z 	INFO	result	{"testcase id": "get-links-by-id-1", "testset id": "test-set-0", "passed": "true"}
+🐰 Keploy: 2026-10-03T09:33:48.080873507Z 	INFO	result	{"testcase id": "post-create-2", "testset id": "test-set-0", "passed": "true"}
+🐰 Keploy: 2026-10-03T09:33:48.082435908Z 	INFO	result	{"testcase id": "get-all-1", "testset id": "test-set-0", "passed": "true"}
+
+ <=========================================>
+  COMPLETE TESTRUN SUMMARY.
+	Total tests: 4
+	Total test passed: 4
+	Total test failed: 0
+	Total time taken: "10.03 s"
+	Test Suite Name		Total Test	Passed		Failed		Time Taken
+	"test-set-0"		4		4		0		"10.03 s"
+<=========================================>
+```
+
+</Output>
+
+**4 of 4 passed, and MySQL was off the whole time.** Look at the app's own log line, `*** DB Initiated at ***`. The app connected, pinged, and ran `CREATE TABLE` against what it thought was MySQL. Keploy answered all of it from `mocks.yaml`.
+
+</Step>
+<Step title="Find the report">
+
+Keploy also writes a YAML report for every run, in `keploy/reports/test-run-0/test-set-0-report.yaml`. Its header sums up the run:
+
+```yaml title="keploy/reports/test-run-0/test-set-0-report.yaml (excerpt)"
+# Generated by Keploy (3.6.87)
+version: api.keploy.io/v1beta1
+name: test-set-0-report
+status: PASSED
+success: 4
+failure: 0
+ignored: 0
+total: 4
+```
+
+Each new run gets the next folder: `test-run-1`, `test-run-2`, and so on.
+
+</Step>
+</Steps>
+
+## Step 6: Catch a regression
+
+A test suite only earns its keep when it fails for the right reason. So break something on purpose: change the response message from `"Converted"` to `"Shortened"`.
+
+<Steps>
+<Step title="Change the code and rebuild">
+
+```bash title="Terminal"
+sed -i 's/"Converted"/"Shortened"/' controller/controller.go
+go build -o main
+```
+
+</Step>
+<Step title="Run the same tests again">
+
+```bash title="Terminal"
+sudo -E PATH=$PATH keploy test -c "./main" --delay 10
+echo $?
+```
+
+<Output label="Output (excerpt)" result="fail" wrap={false}>
+
+```text
+Testrun failed for testcase with id: "post-create-1"
+--------------------------------------------------------------------
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                           POST - CREATE - 1                                           │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                    EXPECT BODY                    │                   ACTUAL BODY                     │
+│ ──────────────────────────────────────────────────┼────────────────────────────────────────────────── │
+│  {                                                │ {                                                 │
+│   "message": "Converted" ,                        │  "message": "Shortened" ,                         │
+│  link:http://localhost:8080/links/1               │ link:http://localhost:8080/links/1                │
+│   }                                               │  }                                                │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────┘
+...
+  COMPLETE TESTRUN SUMMARY.
+	Total tests: 4
+	Total test passed: 2
+	Total test failed: 2
+	Total time taken: "10.02 s"
+	Test Suite Name		Total Test	Passed		Failed		Time Taken	Failed Testcases
+	"test-set-0"		4		2		2		"10.02 s"	"post-create-2, post-create-1"
+1
+```
+
+</Output>
+
+Exactly the two `POST /create` tests failed, and both point at the changed field. The redirect and list endpoints still passed, because their responses didn't change. The final `1` is the exit code, so a CI job running this command would fail the build. (The diff table is wide, so scroll the block sideways to see the actual body.)
+
+</Step>
+<Step title="Put it back">
+
+```bash title="Terminal"
+sed -i 's/"Shortened"/"Converted"/' controller/controller.go
+go build -o main
+sudo -E PATH=$PATH keploy test -c "./main" --delay 10
+```
+
+This run passed 4 of 4 again, with exit code `0`.
+
+</Step>
+</Steps>
+
+## What just happened?
+
+Here's how the two modes fit together, based on what Keploy logged during my run:
+
+- **Recording.** Keploy started its own proxy (`Proxy started at port:16789`), took over DNS resolution for the app, and forwarded the app's port 8080 through itself (`Started ingress forwarding`). Requests from `curl` passed through Keploy on the way in, and the app's MySQL traffic passed through it on the way out. Each incoming request became a test case and each query became a mock, both stamped with request and response timestamps. Keploy uses those timestamps to tie mocks to the test that triggered them: its replay log mentions a "mock window" per test, and the first test run saved the result as `keploy/test-set-0/mappings.yaml`. In my run, that file maps `get-all-1` to `mock-6` (the `select * from list` query) and `get-links-by-id-1` to `mock-4`.
+- **Testing.** Keploy restarted the app, saw from the recorded mocks that port 3306 speaks MySQL (`recovered MySQL ports from recorded mocks`), and sent every recorded request again. When the app queried the database, Keploy matched the query against `mocks.yaml` and returned the recorded response. Then it compared the app's HTTP response with the recorded one, skipping the fields marked as noise.
+
+So a Keploy test checks your **Go code's behaviour**, from HTTP handling and JSON encoding to how it uses query results, without needing the database to be there.
+
+### Recording again creates a new test set
+
+Each recording session gets its own folder. When I recorded a second time (a single `GET /all`), Keploy created `keploy/test-set-1`, and the next `keploy test` replayed **both** sets:
+
+<Output label="Output (excerpt)" result="pass">
+
+```text
+	Total tests: 5
+	Total test passed: 5
+	Total test failed: 0
+	Total time taken: "20.04 s"
+	Test Suite Name		Total Test	Passed		Failed		Time Taken
+	"test-set-0"		4		4		0		"10.02 s"
+	"test-set-1"		1		1		0		"10.02 s"
+```
+
+</Output>
+
+The time doubled because Keploy restarts the app (and waits the full `--delay`) for each test set. To run just one set, use `-t`:
+
+```bash title="Terminal"
+sudo -E PATH=$PATH keploy test -c "./main" --delay 10 -t test-set-1
+```
+
+## Troubleshooting
+
+These are the problems I actually hit, or deliberately reproduced, while writing this guide.
+
+### "Connection string empty" right after `keploy record` starts
+
+<Output label="Output (excerpt)" result="error">
+
+```text
+2026/10/03 15:07:31 Connection string empty
+🐰 Keploy: 2026-10-03T09:37:31.253812273Z 	ERROR	error while running the app	{"error": "exit status 1"}
+🐰 Keploy: 2026-10-03T09:37:31.253869415Z 	ERROR	user application terminated unexpectedly hence stopping keploy, please check application logs if this behaviour is not expected
+```
+
+</Output>
+
+This is what happens if you run `sudo keploy record -c "./main"` without `-E`. `sudo` resets the environment, so the app never sees `ConnectionString`. Use `sudo -E PATH=$PATH …`, and check that you ran `export ConnectionString=…` in the same terminal.
+
+### "connection refused" on port 3306 while recording
+
+<Output label="Output (excerpt)" result="error">
+
+```text
+Could not create store dial tcp 127.0.0.1:3306: connect: connection refused
+```
+
+</Output>
+
+The app couldn't reach MySQL, so it exited before serving any requests. Recording needs the real database running. (Testing doesn't, because the mocks stand in for it.) Start MySQL again and wait until it accepts connections.
+
+### "Keploy has taken control of the DNS resolution mechanism"
+
+This line appears on every run. It's an informational message, not an error. It just means the app's DNS lookups go through Keploy while it runs.
+
+### A Go sample using PostgreSQL doesn't replay
+
+The open-source build doesn't include a PostgreSQL parser. In its source, the only protocol parsers registered under `pkg/agent/proxy/integrations` are `http`, `mysql` and `generic`, a protocol-agnostic fallback that pairs raw chunks of traffic. For the Postgres-based Go quickstarts (Echo, Mux + Postgres, FastHttp), use the account-based Keploy build from keploy.io. I didn't test that build.
+
+### `go mod download` or `docker run` fails behind a restrictive network
+
+In my sandbox, `proxy.golang.org` and Docker Hub were both blocked. `GOPROXY=direct go mod download` fetched the modules straight from GitHub instead. For MySQL, I used a locally installed server, as described in Step 2. On a normal network you shouldn't need either workaround.
+
+## Wrapping up
+
+You took a Go API you'd never seen, recorded four real requests, and ended up with a test suite that:
+
+- runs without a database,
+- passes when nothing changed,
+- fails, with a readable diff and a non-zero exit code, when behaviour changes.
+
+You wrote no test code to get there. The `keploy/` folder is plain YAML that sits next to your code, so the natural next step is to commit it and run `keploy test` in CI.
+
+### Where to go next
+
+- [Keploy's official Mux + MySQL quickstart](https://keploy.io/docs/quickstart/samples-mysql/), which this tutorial is based on, including a Docker-only variant
+- [All Go quickstarts](https://keploy.io/docs/quickstart/golang-filter/)
+- [Installing Keploy](https://keploy.io/docs/server/installation/) on Linux, macOS and Windows
+- [keploy/keploy on GitHub](https://github.com/keploy/keploy), the open-source CLI used here
+- [The sample app's source](https://github.com/keploy/samples-go/tree/main/mux-mysql)
