@@ -18,7 +18,7 @@ export function ThemeToggle() {
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={label}
       title={label}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/12 bg-white/5 text-console-text transition-colors hover:bg-white/10"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-chrome-line bg-chrome-chip text-chrome-ink transition-colors hover:bg-chrome-chip-hover"
     >
       {isDark ? (
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">

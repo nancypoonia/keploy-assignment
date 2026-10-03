@@ -28,6 +28,15 @@
   --console-3: #18253b;
   --console-text: #d6deea;
   --console-muted: #8797b0;
+  --chrome: #ffffff;
+  --chrome-ink: #12151c;
+  --chrome-body: #2c3340;
+  --chrome-muted: #5a6272;
+  --chrome-line: #dce1e9;
+  --chrome-chip: rgb(18 21 28 / 0.04);
+  --chrome-chip-hover: rgb(18 21 28 / 0.09);
+  --hero: #e8ecf2;
+  --hero-grid-line: rgb(18 21 28 / 0.06);
   --header-h: 3.75rem;
   color-scheme: light;
 }
@@ -51,6 +60,15 @@
   --console: #070b12;
   --console-2: #0d1420;
   --console-3: #131c2b;
+  --chrome: #070b12;
+  --chrome-ink: #ffffff;
+  --chrome-body: #d6deea;
+  --chrome-muted: #8797b0;
+  --chrome-line: rgb(255 255 255 / 0.1);
+  --chrome-chip: rgb(255 255 255 / 0.05);
+  --chrome-chip-hover: rgb(255 255 255 / 0.1);
+  --hero: #070b12;
+  --hero-grid-line: rgb(255 255 255 / 0.035);
   color-scheme: dark;
 }
 
@@ -75,6 +93,14 @@
   --color-console-3: var(--console-3);
   --color-console-text: var(--console-text);
   --color-console-muted: var(--console-muted);
+  --color-chrome: var(--chrome);
+  --color-chrome-ink: var(--chrome-ink);
+  --color-chrome-body: var(--chrome-body);
+  --color-chrome-muted: var(--chrome-muted);
+  --color-chrome-line: var(--chrome-line);
+  --color-chrome-chip: var(--chrome-chip);
+  --color-chrome-chip-hover: var(--chrome-chip-hover);
+  --color-hero: var(--hero);
   --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -620,8 +646,8 @@ body {
 /* faint measurement grid behind the hero, like a scope screen */
 .hero-grid {
   background-image:
-    linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+    linear-gradient(to right, var(--hero-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--hero-grid-line) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 80% 70% at 70% 40%, #000 30%, transparent 75%);
 }

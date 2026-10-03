@@ -178,11 +178,11 @@ export function HeroConsole() {
           on
           color={s.phase === "record" ? "rec" : "play"}
           label="Mode"
-          value={s.phase === "record" ? "REC, recording" : "PLAY, replaying"}
+          value={s.phase === "record" ? "REC" : "PLAY"}
         />
         <Lamp on={!s.mysqlOff} color="play" label="MySQL :3306" value={s.mysqlOff ? "stopped" : "running"} />
-        <Lamp on={s.captured > 0} color="rec" label="Test cases" value={`${s.captured} / 4 recorded`} />
-        <Lamp on={s.passed > 0} color="play" label="Replay" value={`${s.passed} / 4 passed`} />
+        <Lamp on={s.captured > 0} color="rec" label="Test cases recorded" value={`${s.captured} / 4`} />
+        <Lamp on={s.passed > 0} color="play" label="Tests passed" value={`${s.passed} / 4`} />
       </div>
 
       {/* terminal */}
